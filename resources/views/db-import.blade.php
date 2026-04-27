@@ -11,6 +11,9 @@
         .ok { background: #ecfdf3; color: #166534; border: 1px solid #86efac; }
         .err { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
         .warn { background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; }
+        .report { margin-top: 1rem; border-collapse: collapse; width: 100%; }
+        .report th, .report td { border: 1px solid #e5e7eb; padding: 0.5rem; text-align: left; }
+        .report th { background: #f9fafb; }
         button { margin-top: 1rem; padding: 0.6rem 1rem; cursor: pointer; }
     </style>
 </head>
@@ -23,6 +26,32 @@
 
         @if (session('success'))
             <div class="msg ok">{{ session('success') }}</div>
+        @endif
+
+        @if (session('import_report'))
+            @php($report = session('import_report'))
+            <div class="msg ok">
+                <strong>Import report</strong><br>
+                File: {{ $report['file_name'] ?? 'unknown' }}<br>
+                Imported at: {{ $report['imported_at'] ?? 'unknown' }}
+            </div>
+
+            <table class="report">
+                <thead>
+                    <tr>
+                        <th>Table</th>
+                        <th>Rows after import</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (($report['table_counts'] ?? []) as $table => $count)
+                        <tr>
+                            <td>{{ $table }}</td>
+                            <td>{{ is_null($count) ? 'missing table' : $count }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
         @endif
 
         @if (session('error'))
