@@ -21,6 +21,9 @@ $app = Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->trustProxies(at: '*');
+    })
     ->create();
 if (file_exists(base_path('.env.local'))) {
     $app->loadEnvironmentFrom('.env.local');
