@@ -79,12 +79,12 @@ class MarkSignService
                     'name' => $claim->first_name,
                     'surname' => $claim->last_name,
                     'email' => $claim->email,
-                ],
-                [
-                    'name' => 'Agneška',
-                    'surname' => ' Stasilo',
-                    'email' => 'agneska@sitandgo.lt',
                 ]
+//                ,[
+//                    'name' => 'Agneška',
+//                    'surname' => ' Stasilo',
+//                    'email' => 'agneska@sitandgo.lt',
+//                ]
             ],
         ]);
 
