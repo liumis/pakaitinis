@@ -17,6 +17,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Form;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Component;
 
 class SubmitClaim extends Component implements HasForms
@@ -40,7 +41,13 @@ class SubmitClaim extends Component implements HasForms
                     ->schema([
                         Select::make('garage_id')
                             ->label('Servisas')
-                            ->options(Garage::all()->pluck('name', 'id'))
+                            ->options(function (): array {
+                                if (! Schema::hasTable('garages')) {
+                                    return [];
+                                }
+
+                                return Garage::query()->pluck('name', 'id')->all();
+                            })
                             ->searchable()
                             ->preload()
                             ->required()
@@ -65,7 +72,13 @@ class SubmitClaim extends Component implements HasForms
 
                                 Select::make('partner_id')
                                     ->label('Kaltininko draudimo bendrovė')
-                                    ->options(Partner::all()->pluck('short_name', 'id'))
+                                    ->options(function (): array {
+                                        if (! Schema::hasTable('partners')) {
+                                            return [];
+                                        }
+
+                                        return Partner::query()->pluck('short_name', 'id')->all();
+                                    })
                                     ->searchable()
                                     ->preload()
                                     ->required(),
