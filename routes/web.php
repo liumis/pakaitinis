@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\MailController;
-use App\Http\Controllers\DbImportController;
 use App\Http\Controllers\MarkSignCallbackController;
 use App\Livewire\SubmitClaim;
 use Illuminate\Support\Facades\Route;
@@ -10,8 +9,6 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 Route::get('/', SubmitClaim::class);
 Route::post('/marksign/callback', [MarkSignCallbackController::class, 'handle'])->name('marksign.callback');
-Route::get('/db-import', [DbImportController::class, 'show'])->name('db-import.form');
-Route::post('/db-import', [DbImportController::class, 'import'])->name('db-import.run');
 
 Route::prefix('pdf-debug/{id}')->group(function () {
 
