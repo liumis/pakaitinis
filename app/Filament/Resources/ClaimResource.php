@@ -169,7 +169,7 @@ class ClaimResource extends Resource
             ->icon('heroicon-o-arrow-path')
             ->color('warning')
             ->size(ActionSize::Small)
-            ->visible(fn ($record) => in_array($record->status, ['error', 'pending']))
+            ->visible(fn ($record) => in_array($record->status->value, ['error', 'pending']))
             ->requiresConfirmation()
             ->modalHeading('Pergeneruoti dokumentą?')
             ->modalDescription('Ar tikrai norite iš naujo sugeneruoti PDF ir nusiųsti užklausą į Mark Sign?')
