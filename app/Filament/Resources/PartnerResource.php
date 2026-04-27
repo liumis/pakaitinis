@@ -16,10 +16,10 @@ class PartnerResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-building-office-2';
 
-    protected static ?string $navigationLabel = 'Partneriai';
+    protected static ?string $navigationLabel = 'Insuarance companies';
 
-    protected static ?string $modelLabel = 'Partneris';
-    protected static ?string $pluralModelLabel = 'Partneriai';
+    protected static ?string $modelLabel = 'Insuarance company';
+    protected static ?string $pluralModelLabel = 'Insuarance companies';
 
     public static function form(Form $form): Form
     {

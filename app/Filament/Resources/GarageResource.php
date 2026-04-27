@@ -18,6 +18,12 @@ class GarageResource extends Resource
     protected static ?string $model = Garage::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    
+    protected static ?string $navigationLabel = 'Auto services';
+
+    protected static ?string $modelLabel = 'Auto service';
+
+    protected static ?string $pluralModelLabel = 'Auto services';
 
     public static function form(Form $form): Form
     {

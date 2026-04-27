@@ -2,11 +2,11 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Resources\ClaimResource;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -26,15 +26,19 @@ class SecurePanelProvider extends PanelProvider
             ->default()
             ->id('secure')
             ->path('secure')
+            ->homeUrl(fn (): string => ClaimResource::getUrl(panel: 'secure'))
             ->login()
+            ->passwordReset()
+            ->brandName('Sit&Go')
+            ->brandLogo(asset('images/sitandgo-logo.png'))
+            ->brandLogoHeight('2.25rem')
+            ->favicon(asset('images/brand/favicon.png'))
+            ->darkMode(false)
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex('#1f3446'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
-            ->pages([
-                Pages\Dashboard::class,
-            ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
 

@@ -26,7 +26,11 @@ class ClaimResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationLabel = 'Užklausos';
+    protected static ?string $navigationLabel = 'Requests';
+
+    protected static ?string $modelLabel = 'Request';
+
+    protected static ?string $pluralModelLabel = 'Requests';
 
     public static function form(Form $form): Form
     {
