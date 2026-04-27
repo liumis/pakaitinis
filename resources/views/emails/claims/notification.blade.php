@@ -20,7 +20,7 @@
                     <td style="padding:28px 28px 16px 28px;">
                         <h1 style="margin:0 0 10px 0;font-size:24px;line-height:1.2;color:#223a4e;">Užpildyta nauja forma</h1>
                         <p style="margin:0;font-size:15px;line-height:1.6;color:#38556f;">
-                            Sveiki,<br>
+                            Sveiki!<br>
                             Užpildyta nauja forma
                         </p>
                     </td>
@@ -30,7 +30,7 @@
                         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
                             <tr>
                                 <td style="padding:10px 12px;background:#f8fbff;border:1px solid #e6edf5;font-size:13px;color:#607d96;width:42%;">Pildantis asmuo</td>
-                                <td style="padding:10px 12px;border:1px solid #e6edf5;font-size:14px;color:#223a4e;">{{$claim->first_name}} {{$claim->first_name}}</td>
+                                <td style="padding:10px 12px;border:1px solid #e6edf5;font-size:14px;color:#223a4e;">{{$claim->first_name}} {{$claim->last_name}}</td>
                             </tr>
                             <tr>
                                 <td style="padding:10px 12px;background:#f8fbff;border:1px solid #e6edf5;font-size:13px;color:#607d96;width:42%;">Servisas</td>
