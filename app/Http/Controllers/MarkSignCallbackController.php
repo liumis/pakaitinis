@@ -5,6 +5,7 @@ use App\Models\Claim;
 use App\Services\MarkSignService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\SharePointController;
 
 class MarkSignCallbackController extends Controller
 {
@@ -33,6 +34,8 @@ class MarkSignCallbackController extends Controller
 
                 $claim->save();
                 Log::info("Claim ID {$claim->id} sėkmingai pažymėtas kaip pasirašytas.");
+                $sp = new SharePointController();
+                $sp->run($claim->id);
             } else {
                 Log::warning("Callback gautas, bet claim su UUID {$docUuid} nerastas.");
             }
