@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Claim;
 use App\Models\Setting;
+use App\Support\SharePointFileUrl;
 use DateTime;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
@@ -70,32 +71,91 @@ class SharePointController extends Controller
 
         return $data['id'];
     }
-    private function getFileId(string $siteId, string $filePath): string
+    public function getExcelWebUrl(): ?string
     {
-        if(!$this->accessToken) return false;
-        $encodedPath = implode('/', array_map('rawurlencode', explode('/', $filePath)));
-        $endpoint = "sites/{$siteId}/drive/root:/{$encodedPath}";
+        if (! $this->accessToken) {
+            return null;
+        }
 
+        $siteName = $this->spSettings->site_name ?? null;
+        $filePath = $this->spSettings->file_path ?? null;
+        $fileName = $this->spSettings->file_name ?? null;
+
+        if (! $siteName || ! $filePath || ! $fileName) {
+            return null;
+        }
+
+        $siteId = $this->getSiteId($siteName);
+        $item = $this->getDriveItem($siteId, $filePath.'/'.$fileName);
+
+        if (! is_array($item)) {
+            return null;
+        }
+
+        if (! empty($item['webUrl'])) {
+            return $item['webUrl'];
+        }
+
+        $site = SharePointFileUrl::parseSiteName($siteName);
+        $uniqueId = $item['listItem']['uniqueId'] ?? null;
+
+        if ($site !== null && $uniqueId) {
+            return SharePointFileUrl::buildDocAspxUrl(
+                $site['host'],
+                $site['path'],
+                $uniqueId,
+                $fileName,
+            );
+        }
+
+        return null;
+    }
+
+    private function getDriveItem(string $siteId, string $filePath): array|false
+    {
+        if (! $this->accessToken) {
+            return false;
+        }
+
+        $encodedPath = implode('/', array_map(rawurlencode(...), explode('/', $filePath)));
+
+        $endpoint = "sites/{$siteId}/drive/root:/{$encodedPath}";
 
         try {
             $response = $this->client->get($endpoint, [
+                'query' => ['$expand' => 'listItem'],
                 'headers' => [
                     'Authorization' => "Bearer {$this->accessToken}",
                     'Accept' => 'application/json',
-                    'http_errors' => false
-                ]
+                    'http_errors' => false,
+                ],
             ]);
+
             if ($response->getStatusCode() !== 200) {
-                $error = "Nepavyko rasti failo pagal kelią: {$filePath}. API klaida: " . $response->getBody();
-                Log::error('SharePointController: ' . $error);
+                $error = "Nepavyko rasti failo pagal kelią: {$filePath}. API klaida: ".$response->getBody();
+                Log::error('SharePointController: '.$error);
+
+                return false;
             }
-            $data = json_decode($response->getBody(), true);
-            return $data['id'];
+
+            return json_decode($response->getBody(), true);
 
         } catch (\Exception $e) {
-            Log::error('SharePointController: ' . $e->getMessage());
+            Log::error('SharePointController: '.$e->getMessage());
         }
+
         return false;
+    }
+
+    private function getFileId(string $siteId, string $filePath): string|false
+    {
+        $item = $this->getDriveItem($siteId, $filePath);
+
+        if (! is_array($item)) {
+            return false;
+        }
+
+        return $item['id'] ?? false;
     }
     private function appendRowToExcel(string $siteId, string $fileId, string $sheetName, array $rowData)
     {
