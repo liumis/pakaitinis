@@ -1,11 +1,10 @@
 <x-filament-panels::page>
-    <form wire:submit="import">
+    <x-filament-panels::form wire:submit="import">
         {{ $this->form }}
 
-        <div class="mt-6">
-            <x-filament::button type="submit" color="danger">
-                Run import
-            </x-filament::button>
-        </div>
-    </form>
+        <x-filament-panels::form.actions
+            :actions="$this->getCachedFormActions()"
+            :full-width="$this->hasFullWidthFormActions()"
+        />
+    </x-filament-panels::form>
 </x-filament-panels::page>

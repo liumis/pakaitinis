@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Textarea;
@@ -9,6 +10,7 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
+use Filament\Pages\Concerns\InteractsWithFormActions;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -17,6 +19,7 @@ use Throwable;
 
 class DbImport extends Page implements HasForms
 {
+    use InteractsWithFormActions;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-circle-stack';
@@ -57,6 +60,7 @@ class DbImport extends Page implements HasForms
 
                         FileUpload::make('sql_file')
                             ->label('Or upload .sql file')
+                            ->disk('public')
                             ->acceptedFileTypes([
                                 'text/plain',
                                 'application/sql',
@@ -70,21 +74,29 @@ class DbImport extends Page implements HasForms
             ->statePath('data');
     }
 
+    protected function getFormActions(): array
+    {
+        return [
+            Action::make('import')
+                ->label('Run import')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->modalHeading('Run SQL import?')
+                ->modalDescription('This will execute SQL against the current database. Continue only if you trust this dump.')
+                ->action('import'),
+        ];
+    }
+
+    protected function hasFullWidthFormActions(): bool
+    {
+        return false;
+    }
+
     public function import(): void
     {
-        $sql = trim($this->data['sql'] ?? '');
+        $sql = $this->resolveSql();
 
-        if ($sql === '' && ! empty($this->data['sql_file'])) {
-            $files = is_array($this->data['sql_file']) ? $this->data['sql_file'] : [$this->data['sql_file']];
-            $path = $files[0] ?? null;
-
-            if ($path && Storage::disk('public')->exists($path)) {
-                $sql = Storage::disk('public')->get($path);
-                Storage::disk('public')->delete($path);
-            }
-        }
-
-        if ($sql === '') {
+        if ($sql === null || trim($sql) === '') {
             Notification::make()
                 ->danger()
                 ->title('No SQL provided')
@@ -131,5 +143,26 @@ class DbImport extends Page implements HasForms
         }
 
         return implode("\n", $lines);
+    }
+
+    private function resolveSql(): ?string
+    {
+        $fileState = $this->data['sql_file'] ?? null;
+
+        if (filled($fileState)) {
+            $path = is_array($fileState) ? ($fileState[0] ?? null) : $fileState;
+
+            if (is_string($path) && $path !== '') {
+                foreach (['public', 'local'] as $disk) {
+                    if (Storage::disk($disk)->exists($path)) {
+                        return Storage::disk($disk)->get($path);
+                    }
+                }
+            }
+        }
+
+        $pasted = trim($this->data['sql'] ?? '');
+
+        return $pasted !== '' ? $pasted : null;
     }
 }
