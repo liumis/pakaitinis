@@ -9,10 +9,11 @@ use App\Services\MicrosoftGraphMailService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class DiagnoseIntegrationsCommand extends Command
 {
-    protected $signature = 'integrations:diagnose {claim_id?}';
+    protected $signature = 'integrations:diagnose {claim_id?} {--test-upload : Try a MarkSign PDF upload using an existing temp PDF}';
 
     protected $description = 'Check queue, MarkSign token, email settings, and latest claim integration fields';
 
@@ -41,6 +42,28 @@ class DiagnoseIntegrationsCommand extends Command
 
         $markSign = app(MarkSignService::class);
         $this->line('MarkSignService configured: '.($markSign->isConfigured() ? 'yes' : 'no'));
+
+        if ($this->option('test-upload') && $markSign->isConfigured()) {
+            $testPath = 'temp/diagnose_marksign_test.pdf';
+            if (! Storage::disk('local')->exists($testPath)) {
+                $claimId = $this->argument('claim_id') ?? Claim::query()->latest()->value('id');
+                $candidate = $claimId ? "temp/claim_{$claimId}.pdf" : null;
+                $testPath = ($candidate && Storage::disk('local')->exists($candidate))
+                    ? $candidate
+                    : $testPath;
+            }
+
+            if ($testPath === 'temp/diagnose_marksign_test.pdf' && ! Storage::disk('local')->exists($testPath)) {
+                $this->warn('No temp PDF found — submit/Pergeneruoti a claim first, then rerun with --test-upload');
+            } else {
+                try {
+                    $uuid = $markSign->uploadDocument($testPath);
+                    $this->info("MarkSign test upload OK: {$uuid}");
+                } catch (\Throwable $e) {
+                    $this->error('MarkSign test upload failed: '.$e->getMessage());
+                }
+            }
+        }
 
         $this->newLine();
         $this->info('=== Email (O365 / Graph) ===');

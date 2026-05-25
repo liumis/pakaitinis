@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Claim;
 use Exception;
+use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -16,8 +17,8 @@ class MarkSignService
 
     public function __construct()
     {
-        $this->token = config('services.marksign.token');
-        $this->baseUrl = config('services.marksign.base_url');
+        $this->token = trim((string) config('services.marksign.token'));
+        $this->baseUrl = rtrim((string) config('services.marksign.base_url'), '/');
     }
 
     public function isConfigured(): bool
@@ -40,27 +41,38 @@ class MarkSignService
         $fileName = basename($fullPath);
         $fileContents = file_get_contents($fullPath);
 
-        $response = Http::timeout(90)
-            ->attach('files[]', $fileContents, $fileName)
-            ->post("{$this->baseUrl}/v2/document/upload", [
-                'access_token' => $this->token,
-                'access' => 'private',
-                'billing_type' => 'document_owner',
-            ]);
+        $client = new Client(['timeout' => 90]);
+        $response = $client->post("{$this->baseUrl}/v2/document/upload", [
+            'multipart' => [
+                ['name' => 'access_token', 'contents' => $this->token],
+                ['name' => 'access', 'contents' => 'private'],
+                ['name' => 'billing_type', 'contents' => 'document_owner'],
+                [
+                    'name' => 'files[]',
+                    'contents' => $fileContents,
+                    'filename' => $fileName,
+                    'headers' => ['Content-Type' => 'application/pdf'],
+                ],
+            ],
+        ]);
 
-        if (! $response->successful()) {
+        $statusCode = $response->getStatusCode();
+        $body = (string) $response->getBody();
+
+        if ($statusCode < 200 || $statusCode >= 300) {
             Log::error('MarkSign upload failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
+                'status' => $statusCode,
+                'body' => $body,
             ]);
 
-            throw new Exception('MarkSign Upload Error: '.$response->body());
+            throw new Exception('MarkSign Upload Error: '.$body);
         }
 
-        $uuid = $response->json('data.0.uuid');
+        $payload = json_decode($body, true);
+        $uuid = $payload['data'][0]['uuid'] ?? null;
 
         if (! $uuid) {
-            throw new Exception('Nepavyko gauti dokumento UUID. Atsakymas: '.$response->body());
+            throw new Exception('Nepavyko gauti dokumento UUID. Atsakymas: '.$body);
         }
 
         Log::info('MarkSign document uploaded', ['uuid' => $uuid]);
