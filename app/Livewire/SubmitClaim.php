@@ -6,6 +6,7 @@ use App\Mail\FormFilledNotificationMail;
 use App\Models\Claim;
 use App\Models\Garage;
 use App\Models\Partner;
+use App\Models\User;
 use App\Jobs\GenerateClaimPdf;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -125,7 +126,17 @@ class SubmitClaim extends Component implements HasForms
         GenerateClaimPdf::dispatch($claim);
 
         session()->flash('message', 'Forma sėkmingai pateikta! Dokumentai ruošiami.');
-       Mail::to('tomukas14@gmail.com')->send(new FormFilledNotificationMail($claim));
+
+        $notificationRecipients = User::query()
+            ->where('send_notifications', true)
+            ->pluck('email')
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($notificationRecipients !== []) {
+            Mail::to($notificationRecipients)->send(new FormFilledNotificationMail($claim));
+        }
 
         $this->form->fill();
     }

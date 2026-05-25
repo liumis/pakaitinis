@@ -45,6 +45,10 @@ class UserResource extends Resource
                     ->minLength(8)
                     ->required(fn (string $operation): bool => $operation === 'create')
                     ->dehydrated(fn (?string $state): bool => filled($state)),
+
+                Forms\Components\Checkbox::make('send_notifications')
+                    ->label('Send notifications')
+                    ->default(false),
             ]);
     }
 
@@ -60,6 +64,11 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('email')
                     ->label('Email')
                     ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\IconColumn::make('send_notifications')
+                    ->label('Send notifications')
+                    ->boolean()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')
