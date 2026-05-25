@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Mail\DocumentSigningRequestMail;
 use App\Models\Claim;
 use App\Models\EmailSetting;
 use App\Services\MarkSignService;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\Storage;
 
 class DiagnoseIntegrationsCommand extends Command
 {
-    protected $signature = 'integrations:diagnose {claim_id?} {--test-upload : Try a MarkSign PDF upload using an existing temp PDF}';
+    protected $signature = 'integrations:diagnose {claim_id?} {--test-upload : Try a MarkSign PDF upload using an existing temp PDF} {--test-mail : Send signing email for the claim}';
 
     protected $description = 'Check queue, MarkSign token, email settings, and latest claim integration fields';
 
@@ -97,6 +98,22 @@ class DiagnoseIntegrationsCommand extends Command
                     $this->line('MarkSign signer status: '.($signer['signStatus'] ?? json_encode($status)));
                 } catch (\Throwable $e) {
                     $this->error('MarkSign status API: '.$e->getMessage());
+                }
+            }
+
+            if ($this->option('test-mail')) {
+                if (! filled($claim->signing_url)) {
+                    $this->warn('Claim has no signing_url — run Pergeneruoti first.');
+                } else {
+                    try {
+                        app(MicrosoftGraphMailService::class)->send(
+                            new DocumentSigningRequestMail($claim),
+                            $claim->email,
+                        );
+                        $this->info("Signing email sent to: {$claim->email}");
+                    } catch (\Throwable $e) {
+                        $this->error('Test mail failed: '.$e->getMessage());
+                    }
                 }
             }
         }

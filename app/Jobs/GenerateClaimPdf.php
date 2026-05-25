@@ -54,13 +54,21 @@ class GenerateClaimPdf implements ShouldQueue
             ]);
 
             try {
+                $this->claim->refresh();
+
                 app(MicrosoftGraphMailService::class)->send(
                     new DocumentSigningRequestMail($this->claim),
                     $this->claim->email,
                 );
+
+                Log::info('GenerateClaimPdf signing email sent', [
+                    'claim_id' => $this->claim->id,
+                    'email' => $this->claim->email,
+                ]);
             } catch (Throwable $mailException) {
                 Log::error('GenerateClaimPdf mail failed (claim still has signing link)', [
                     'claim_id' => $this->claim->id,
+                    'email' => $this->claim->email,
                     'message' => $mailException->getMessage(),
                 ]);
             }

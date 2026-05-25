@@ -19,6 +19,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use App\Jobs\GenerateClaimPdf;
+use App\Mail\DocumentSigningRequestMail;
+use App\Services\MicrosoftGraphMailService;
 use Filament\Notifications\Notification;
 use Filament\Support\Enums\ActionSize;
 use App\Services\MarkSignService;
@@ -246,6 +248,38 @@ class ClaimResource extends Resource
                         "pasirasytas_dokumentas_{$record->id}.pdf"
                     );
                 }),
+        Tables\Actions\Action::make('resendSigningEmail')
+            ->label('Siųsti el. laišką')
+            ->icon('heroicon-o-envelope')
+            ->color('success')
+            ->size(ActionSize::Small)
+            ->visible(fn ($record) => filled($record->signing_url) && filled($record->email))
+            ->requiresConfirmation()
+            ->modalHeading('Siųsti pasirašymo el. laišką?')
+            ->modalDescription(fn ($record) => "Laiškas bus siunčiamas adresu: {$record->email}")
+            ->action(function ($record) {
+                try {
+                    $record->refresh();
+
+                    app(MicrosoftGraphMailService::class)->send(
+                        new DocumentSigningRequestMail($record),
+                        $record->email,
+                    );
+
+                    Notification::make()
+                        ->success()
+                        ->title('El. laiškas išsiųstas')
+                        ->body($record->email)
+                        ->send();
+                } catch (\Throwable $e) {
+                    Notification::make()
+                        ->danger()
+                        ->title('Nepavyko išsiųsti el. laiško')
+                        ->body($e->getMessage())
+                        ->send();
+                }
+            }),
+
         Action::make('retry_pdf')
             ->label('Pergeneruoti')
             ->icon('heroicon-o-arrow-path')

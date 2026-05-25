@@ -70,7 +70,6 @@ class MicrosoftGraphMailService
                 'contentType' => 'HTML',
                 'content' => $html,
             ],
-            'from' => $this->buildFromRecipient(),
             'toRecipients' => array_map(
                 fn (string $address): array => [
                     'emailAddress' => ['address' => $address],
@@ -79,8 +78,23 @@ class MicrosoftGraphMailService
             ),
         ];
 
+        $from = $this->buildFromRecipient();
+        $fromAddress = $from['emailAddress']['address'] ?? $senderMailbox;
+        $fromName = $from['emailAddress']['name'] ?? null;
+
+        if (strcasecmp($fromAddress, $senderMailbox) === 0 && $fromName) {
+            $message['from'] = [
+                'emailAddress' => [
+                    'address' => $senderMailbox,
+                    'name' => $fromName,
+                ],
+            ];
+        }
+
+        $senderPath = rawurlencode($senderMailbox);
+
         try {
-            $response = $client->post("users/{$senderMailbox}/sendMail", [
+            $response = $client->post("users/{$senderPath}/sendMail", [
                 'headers' => [
                     'Authorization' => "Bearer {$accessToken}",
                     'Content-Type' => 'application/json',
