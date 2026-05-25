@@ -19,10 +19,20 @@ class MarkSignService
 
     public function uploadDocument($pdfPath)
     {
+        if (! $this->token) {
+            throw new Exception('MarkSign access token is not configured (MARKSIGN_TOKEN).');
+        }
+
+        $fullPath = Storage::disk('local')->path($pdfPath);
+
+        if (! is_readable($fullPath)) {
+            throw new Exception("PDF file not found for upload: {$fullPath}");
+        }
+
         $response = Http::asMultipart()
             ->post("{$this->baseUrl}/v2/document/upload", [
                 'access_token' => $this->token,
-                'files[]' => fopen(Storage::path($pdfPath), 'r'),
+                'files[]' => fopen($fullPath, 'r'),
                 'access' => 'private',
                 'billing_type' => 'document_owner',
             ]);

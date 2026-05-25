@@ -2,18 +2,20 @@
 
 namespace App\Jobs;
 
+use App\Enums\ClaimStatus;
+use App\Mail\DocumentSigningRequestMail;
 use App\Models\Claim;
+use App\Services\MarkSignService;
+use App\Services\MicrosoftGraphMailService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
-use App\Services\MarkSignService;
-use App\Mail\DocumentSigningRequestMail;
-use App\Services\MicrosoftGraphMailService;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class GenerateClaimPdf implements ShouldQueue
 {
@@ -28,34 +30,63 @@ class GenerateClaimPdf implements ShouldQueue
     public function handle(MarkSignService $markSign): void
     {
         $this->claim->refresh();
+        $this->claim->load(['partner', 'garage']);
 
-        $pdf = Pdf::loadView('pdf.claim', ['claim' => $this->claim]);
-        $tempPath = 'temp/claim_' . $this->claim->id . '.pdf';
-        Storage::put($tempPath, $pdf->output());
+        Log::info('GenerateClaimPdf started', ['claim_id' => $this->claim->id]);
 
         try {
+            $pdf = Pdf::loadView('pdf.claim', ['claim' => $this->claim]);
+            $tempPath = 'temp/claim_'.$this->claim->id.'.pdf';
+            Storage::disk('local')->put($tempPath, $pdf->output());
+
             $uuid = $markSign->uploadDocument($tempPath);
             $signingUrl = $markSign->generateSigningLink($uuid, $this->claim);
 
             $this->claim->update([
                 'marksign_uuid' => $uuid,
                 'signing_url' => $signingUrl,
-                'status' => 'awaiting_signature'
+                'status' => ClaimStatus::AwaitingSignature,
             ]);
 
-            app(MicrosoftGraphMailService::class)->send(
-                new DocumentSigningRequestMail($this->claim),
-                $this->claim->email,
-            );
-
-        } catch (\Exception $e) {
-            Log::error('MarkSign Integration Failed: '.$e->getMessage(), [
+            Log::info('GenerateClaimPdf MarkSign OK', [
                 'claim_id' => $this->claim->id,
+                'marksign_uuid' => $uuid,
             ]);
 
-            $this->claim->update(['status' => 'error']);
+            try {
+                app(MicrosoftGraphMailService::class)->send(
+                    new DocumentSigningRequestMail($this->claim),
+                    $this->claim->email,
+                );
+            } catch (Throwable $mailException) {
+                Log::error('GenerateClaimPdf mail failed (claim still has signing link)', [
+                    'claim_id' => $this->claim->id,
+                    'message' => $mailException->getMessage(),
+                ]);
+            }
+        } catch (Throwable $e) {
+            Log::error('GenerateClaimPdf failed', [
+                'claim_id' => $this->claim->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            $this->claim->update(['status' => ClaimStatus::Error]);
 
             throw $e;
         }
+    }
+
+    public function failed(?Throwable $exception): void
+    {
+        $claim = Claim::find($this->claim->id);
+
+        if ($claim && $claim->status === ClaimStatus::Pending) {
+            $claim->update(['status' => ClaimStatus::Error]);
+        }
+
+        Log::error('GenerateClaimPdf job failed permanently', [
+            'claim_id' => $this->claim->id,
+            'message' => $exception?->getMessage(),
+        ]);
     }
 }
