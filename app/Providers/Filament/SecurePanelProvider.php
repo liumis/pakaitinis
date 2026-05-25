@@ -3,7 +3,9 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Resources\ClaimResource;
+use App\Support\SharePointFileUrl;
 use Filament\Http\Middleware\Authenticate;
+use Filament\Navigation\NavigationItem;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -42,6 +44,15 @@ class SecurePanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
 
+            ])
+            ->navigationItems([
+                NavigationItem::make('sharepoint-excel')
+                    ->label('Excel data file')
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->url(fn (): string => SharePointFileUrl::fromSettings() ?? '#')
+                    ->openUrlInNewTab()
+                    ->sort(41)
+                    ->visible(fn (): bool => SharePointFileUrl::fromSettings() !== null),
             ])
             ->middleware([
                 EncryptCookies::class,
