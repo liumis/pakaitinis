@@ -232,6 +232,37 @@ class ClaimResource extends Resource
                     }
                 }),
 
+            Action::make('resendSigningEmail')
+                ->label('Resend')
+                ->icon('heroicon-o-envelope')
+                ->color('success')
+                ->visible(fn ($record) => filled($record->signing_url) && filled($record->email))
+                ->requiresConfirmation()
+                ->modalHeading('Resend signing email?')
+                ->modalDescription(fn ($record) => "Email will be sent to: {$record->email}")
+                ->action(function ($record) {
+                    try {
+                        $record->refresh();
+
+                        app(MicrosoftGraphMailService::class)->send(
+                            new DocumentSigningRequestMail($record),
+                            $record->email,
+                        );
+
+                        Notification::make()
+                            ->success()
+                            ->title('Email sent')
+                            ->body($record->email)
+                            ->send();
+                    } catch (\Throwable $e) {
+                        Notification::make()
+                            ->danger()
+                            ->title('Failed to send email')
+                            ->body($e->getMessage())
+                            ->send();
+                    }
+                }),
+
             Tables\Actions\Action::make('downloadSigned')
                 ->label('Parsiųsti pasirašytą')
                 ->icon('heroicon-o-document-arrow-down')
@@ -248,37 +279,6 @@ class ClaimResource extends Resource
                         "pasirasytas_dokumentas_{$record->id}.pdf"
                     );
                 }),
-        Tables\Actions\Action::make('resendSigningEmail')
-            ->label('Siųsti el. laišką')
-            ->icon('heroicon-o-envelope')
-            ->color('success')
-            ->size(ActionSize::Small)
-            ->visible(fn ($record) => filled($record->signing_url) && filled($record->email))
-            ->requiresConfirmation()
-            ->modalHeading('Siųsti pasirašymo el. laišką?')
-            ->modalDescription(fn ($record) => "Laiškas bus siunčiamas adresu: {$record->email}")
-            ->action(function ($record) {
-                try {
-                    $record->refresh();
-
-                    app(MicrosoftGraphMailService::class)->send(
-                        new DocumentSigningRequestMail($record),
-                        $record->email,
-                    );
-
-                    Notification::make()
-                        ->success()
-                        ->title('El. laiškas išsiųstas')
-                        ->body($record->email)
-                        ->send();
-                } catch (\Throwable $e) {
-                    Notification::make()
-                        ->danger()
-                        ->title('Nepavyko išsiųsti el. laiško')
-                        ->body($e->getMessage())
-                        ->send();
-                }
-            }),
 
         Action::make('retry_pdf')
             ->label('Pergeneruoti')
