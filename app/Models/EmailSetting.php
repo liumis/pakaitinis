@@ -13,7 +13,6 @@ class EmailSetting extends Model
         'client_secret',
         'mail',
         'from_address',
-        'subject',
     ];
 
     protected function casts(): array

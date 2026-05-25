@@ -61,12 +61,6 @@ class EmailSettingResource extends Resource
                             ->label('From')
                             ->maxLength(255)
                             ->helperText('Optional display name, e.g. Sit&Go or Sit&Go <noreply@yourdomain.lt>.'),
-
-                        Forms\Components\TextInput::make('subject')
-                            ->label('Subject')
-                            ->maxLength(255)
-                            ->columnSpanFull()
-                            ->helperText('Default subject prefix or template for notification emails.'),
                     ]),
             ]);
     }
@@ -81,10 +75,6 @@ class EmailSettingResource extends Resource
 
                 Tables\Columns\TextColumn::make('from_address')
                     ->label('From')
-                    ->limit(40),
-
-                Tables\Columns\TextColumn::make('subject')
-                    ->label('Subject')
                     ->limit(40),
 
                 Tables\Columns\TextColumn::make('tenant_id')

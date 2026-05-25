@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Mail\DocumentSigningRequestMail;
-use App\Mail\FormFilledNotificationMail;
 use App\Models\EmailSetting;
 use GuzzleHttp\Client;
 use Illuminate\Mail\Mailable;
@@ -57,7 +55,7 @@ class MicrosoftGraphMailService
 
         $built = $mailable->build();
         $html = $built->render();
-        $subject = $this->resolveSubject($mailable, $built->subject);
+        $subject = $built->subject ?? config('app.name');
         $senderMailbox = $this->settings->mail;
 
         $client = new Client([
@@ -138,24 +136,6 @@ class MicrosoftGraphMailService
 
             return null;
         }
-    }
-
-    private function resolveSubject(Mailable $mailable, ?string $defaultSubject): string
-    {
-        $configured = $this->settings->subject;
-
-        if ($mailable instanceof FormFilledNotificationMail) {
-            $date = date('Y-m-d H:i');
-            $base = $configured ?: 'Užpildyta nauja forma';
-
-            return "[{$date}] {$base}";
-        }
-
-        if ($mailable instanceof DocumentSigningRequestMail) {
-            return $configured ?: ($defaultSubject ?: 'Reikalingas dokumentų pasirašymas');
-        }
-
-        return $configured ?: ($defaultSubject ?: config('app.name'));
     }
 
     /**

@@ -47,7 +47,10 @@ class SubmitClaim extends Component implements HasForms
                                     return [];
                                 }
 
-                                return Garage::query()->pluck('name', 'id')->all();
+                                return Garage::query()
+                                    ->orderBy('name')
+                                    ->pluck('name', 'id')
+                                    ->all();
                             })
                             ->searchable()
                             ->preload()
@@ -78,7 +81,10 @@ class SubmitClaim extends Component implements HasForms
                                             return [];
                                         }
 
-                                        return Partner::query()->pluck('short_name', 'id')->all();
+                                        return Partner::query()
+                                    ->orderBy('short_name')
+                                    ->pluck('short_name', 'id')
+                                    ->all();
                                     })
                                     ->searchable()
                                     ->preload()

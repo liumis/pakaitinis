@@ -15,7 +15,6 @@ return new class extends Migration
             $table->text('client_secret')->nullable();
             $table->string('mail')->nullable();
             $table->string('from_address')->nullable();
-            $table->string('subject')->nullable();
             $table->timestamps();
         });
     }
