@@ -22,7 +22,7 @@ class EmailSettingResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Email settings';
 
-    protected static ?int $navigationSort = 42;
+    protected static bool $shouldRegisterNavigation = false;
 
     public static function form(Form $form): Form
     {
