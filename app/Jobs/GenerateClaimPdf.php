@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use App\Services\MarkSignService;
 use App\Mail\DocumentSigningRequestMail;
-use Illuminate\Support\Facades\Mail;
+use App\Services\MicrosoftGraphMailService;
 
 class GenerateClaimPdf implements ShouldQueue
 {
@@ -43,8 +43,10 @@ class GenerateClaimPdf implements ShouldQueue
                 'status' => 'awaiting_signature'
             ]);
 
-            Mail::to($this->claim->email)
-                ->send(new DocumentSigningRequestMail($this->claim));
+            app(MicrosoftGraphMailService::class)->send(
+                new DocumentSigningRequestMail($this->claim),
+                $this->claim->email,
+            );
 
         } catch (\Exception $e) {
             Log::error('MarkSign Integration Failed: '.$e->getMessage(), [

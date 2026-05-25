@@ -17,7 +17,7 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Form;
-use Illuminate\Support\Facades\Mail;
+use App\Services\MicrosoftGraphMailService;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Component;
 
@@ -135,7 +135,10 @@ class SubmitClaim extends Component implements HasForms
             ->all();
 
         if ($notificationRecipients !== []) {
-            Mail::to($notificationRecipients)->send(new FormFilledNotificationMail($claim));
+            app(MicrosoftGraphMailService::class)->send(
+                new FormFilledNotificationMail($claim),
+                $notificationRecipients,
+            );
         }
 
         $this->form->fill();
