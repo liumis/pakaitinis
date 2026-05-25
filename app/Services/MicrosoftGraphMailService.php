@@ -34,7 +34,9 @@ class MicrosoftGraphMailService
     public function send(Mailable $mailable, string|array $recipients): void
     {
         if (! $this->isConfigured()) {
-            Log::warning('MicrosoftGraphMailService: email settings incomplete, message not sent.');
+            Log::error('MicrosoftGraphMailService: email settings incomplete — no mail sent. Configure /secure/email-settings', [
+                'recipients' => $recipients,
+            ]);
 
             return;
         }
@@ -97,7 +99,14 @@ class MicrosoftGraphMailService
                     'recipients' => $recipients,
                     'subject' => $subject,
                 ]);
+
+                throw new \RuntimeException('Graph sendMail failed: '.$response->getStatusCode().' '.(string) $response->getBody());
             }
+
+            Log::info('MicrosoftGraphMailService: mail sent', [
+                'recipients' => $recipients,
+                'subject' => $subject,
+            ]);
         } catch (\Throwable $e) {
             Log::error('MicrosoftGraphMailService: '.$e->getMessage(), [
                 'recipients' => $recipients,

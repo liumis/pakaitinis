@@ -3,12 +3,17 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ClaimResource\Pages;
-use App\Models\Claim;
 use App\Enums\ClaimStatus;
+use App\Models\Claim;
 use Filament\Forms;
-use Filament\Tables\Actions\Action;
-use Filament\Forms\Form;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Form;
+use Filament\Tables\Actions\Action;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -36,13 +41,90 @@ class ClaimResource extends Resource
     {
         return $form
             ->schema([
+                Section::make('Asmeninė informacija ir žalų registracija')
+                    ->columns(2)
+                    ->schema([
+                        Select::make('garage_id')
+                            ->label('Servisas')
+                            ->relationship('garage', 'name', fn ($query) => $query->orderBy('name'))
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->columnSpanFull(),
 
-                Forms\Components\TextInput::make('user_name')
-                    ->label('Klientas'),
-                Select::make('status')
-                    ->label('Statusas')
-                    ->options(ClaimStatus::class)
-                    ->required(),
+                        TextInput::make('first_name')->label('Vardas')->required(),
+                        TextInput::make('last_name')->label('Pavardė')->required(),
+                        TextInput::make('personal_code')->label('Asmens kodas')->required(),
+                        DatePicker::make('birth_date')->label('Gimimo data')->required(),
+
+                        TextInput::make('license_number')->label('Vairuotojo pažymėjimo Nr.')->required(),
+                        DatePicker::make('license_expires_at')->label('Pažymėjimo galiojimas')->required(),
+
+                        TextInput::make('address')
+                            ->label('Registracijos adresas')
+                            ->required()
+                            ->columnSpanFull(),
+
+                        TextInput::make('phone')->label('Telefonas')->tel()->required(),
+                        TextInput::make('email')->label('El. paštas')->email()->required(),
+
+                        Grid::make(2)
+                            ->schema([
+                                TextInput::make('claim_number')->label('Žalos numeris')->required(),
+
+                                Select::make('partner_id')
+                                    ->label('Kaltininko draudimo bendrovė')
+                                    ->relationship('partner', 'short_name', fn ($query) => $query->orderBy('short_name'))
+                                    ->searchable()
+                                    ->preload()
+                                    ->required(),
+                            ]),
+
+                        Grid::make(2)
+                            ->schema([
+                                DatePicker::make('rental_start')
+                                    ->label('Nuomos pradžia')
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(fn ($state, callable $set) => $set('rental_end', null)),
+
+                                DatePicker::make('rental_end')
+                                    ->label('Nuomos pabaiga')
+                                    ->after('rental_start'),
+                            ]),
+
+                        FileUpload::make('documents')
+                            ->label('Dokumentų nuotraukos')
+                            ->multiple()
+                            ->image()
+                            ->directory('claims')
+                            ->disk('public')
+                            ->columnSpanFull()
+                            ->nullable(),
+                    ]),
+
+                Section::make('MarkSign ir statusas')
+                    ->columns(2)
+                    ->schema([
+                        Select::make('status')
+                            ->label('Statusas')
+                            ->options(ClaimStatus::class)
+                            ->required(),
+
+                        TextInput::make('marksign_uuid')
+                            ->label('MarkSign UUID')
+                            ->disabled(),
+
+                        TextInput::make('signing_url')
+                            ->label('Pasirašymo nuoroda')
+                            ->url()
+                            ->columnSpanFull(),
+
+                        TextInput::make('signed_pdf_path')
+                            ->label('Pasirašyto PDF kelias')
+                            ->disabled()
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 
