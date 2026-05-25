@@ -19,17 +19,17 @@ class GenerateClaimPdf implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $claim;
+    public int $tries = 3;
 
-    public function __construct(Claim $claim)
+    public int $timeout = 120;
+
+    public function __construct(public Claim $claim) {}
+
+    public function handle(MarkSignService $markSign): void
     {
-        $this->claim = $claim;
-    }
+        $this->claim->refresh();
 
-    public function handle(MarkSignService $markSign)
-    {
-
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.claim', ['claim' => $this->claim]);
+        $pdf = Pdf::loadView('pdf.claim', ['claim' => $this->claim]);
         $tempPath = 'temp/claim_' . $this->claim->id . '.pdf';
         Storage::put($tempPath, $pdf->output());
 
@@ -47,8 +47,13 @@ class GenerateClaimPdf implements ShouldQueue
                 ->send(new DocumentSigningRequestMail($this->claim));
 
         } catch (\Exception $e) {
-            Log::error("MarkSign Integration Failed: " . $e->getMessage());
-            $this->fail($e);
+            Log::error('MarkSign Integration Failed: '.$e->getMessage(), [
+                'claim_id' => $this->claim->id,
+            ]);
+
+            $this->claim->update(['status' => 'error']);
+
+            throw $e;
         }
     }
 }
